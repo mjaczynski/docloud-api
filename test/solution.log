@@ -1,0 +1,22 @@
+[2015-04-21T04:33:01Z, WARN] Changed parameter CPX_PARAM_THREADS from 0 to 4
+[2015-04-21T04:33:01Z, INFO] Param[1,067] = 4
+[2015-04-21T04:33:01Z, INFO] Param[1,130] = UTF-8
+[2015-04-21T04:33:01Z, INFO] Param[1,132] = -1
+[2015-04-21T04:33:01Z, INFO] Tried aggregator 1 time.
+[2015-04-21T04:33:01Z, INFO] LP Presolve eliminated 1 rows and 0 columns.
+[2015-04-21T04:33:01Z, INFO] Reduced LP has 12 rows, 12 columns, and 43 nonzeros.
+[2015-04-21T04:33:01Z, INFO] Presolve time = 0.00 sec. (0.01 ticks)
+[2015-04-21T04:33:01Z, INFO] 
+[2015-04-21T04:33:01Z, INFO] Iteration log . . .
+[2015-04-21T04:33:01Z, INFO] Iteration:     1   Dual infeasibility =             0.000000
+[2015-04-21T04:33:01Z, INFO] Iteration:     2   Dual objective     =        434000.000000
+[2015-04-21T04:33:02Z, INFO] There are no bound infeasibilities.
+[2015-04-21T04:33:02Z, INFO] There are no reduced-cost infeasibilities.
+[2015-04-21T04:33:02Z, INFO] Max. unscaled (scaled) Ax-b resid.          = 9.66338e-13 (9.66338e-13)
+[2015-04-21T04:33:02Z, INFO] Max. unscaled (scaled) c-B'pi resid.        = 7.10543e-15 (7.10543e-15)
+[2015-04-21T04:33:02Z, INFO] Max. unscaled (scaled) |x|                  = 7500 (7500)
+[2015-04-21T04:33:02Z, INFO] Max. unscaled (scaled) |slack|              = 4000 (1500)
+[2015-04-21T04:33:02Z, INFO] Max. unscaled (scaled) |pi|                 = 57.25 (61.8)
+[2015-04-21T04:33:02Z, INFO] Max. unscaled (scaled) |red-cost|           = 40.9 (40.9)
+[2015-04-21T04:33:02Z, INFO] Condition number of scaled basis            = 8.4e+01
+[2015-04-21T04:33:02Z, INFO] optimal (1)
