@@ -2,6 +2,7 @@ var request = require('request');
 var Promise = require('promise');
 var zlib = require('zlib');
 var util = require('util');
+var EventEmitter = require('events').EventEmitter;
 
 var client = new Object();
 
@@ -244,6 +245,10 @@ function doPoll(client,jobid, resolve, reject){
 	.catch( function(error) {reject(error)})
 };
 
+function endsWith(str, suffix) {
+    return str.indexOf(suffix, str.length - suffix.length) !== -1;
+}
+
 function doPollLog(client,jobid, resolve, reject,logstream,start){
 	client.getLogItems(jobid,start,true)
 	.then(function (items){		    
@@ -253,7 +258,8 @@ function doPollLog(client,jobid, resolve, reject,logstream,start){
 				var item = items[i]
 				for (var j =0; j < item.records.length; j++){					
 				    var r = item.records[j]
-				    var message = util.format("[%s] %s - %s",new Date(r.date).toISOString(),r.level,r.message)
+				    var message = util.format("[%s] %s - %s",new Date(r.date).toLocaleString(),r.level,r.message)
+				    if (!endsWith(message,"\n")) message+="\n";
 				    logstream.write(message)
 				}			   
 			   	next= item.seqid+1;			   
@@ -289,6 +295,32 @@ client.waitForCompletion = function (jobid, logstream) {
 		});
 	}
 };
+
+/**
+ * Creates a new observer
+ */
+client.observer = function (){
+	return  new EventEmitter();
+}
+
+/**
+ * Get the job status and notify the completion state to the observer
+ */
+client.notifyCompletion = function (jobid, observer){
+	var ctx = this;
+	return ctx.getJobExecutionStatus(jobid)
+	.then(function (status){
+		   if (status.executionStatus=='FAILED'){
+			   observer.emit('failed',jobid)
+		   } else if (status.executionStatus=='PROCESSED'){
+			   observer.emit('processed',jobid)
+		   } else if ( status.executionStatus=='INTERRUPTED'){
+			   observer.emit('interrupted',jobid)
+		   }
+	})
+};
+
+
 
 /**
  * Aborts a job
@@ -337,6 +369,7 @@ client.uploadAttachment = function (jobid, attid, stream) {
 	    }
 	}
 	return new Promise( function (resolve, reject){
+      util.log("Starting upload of '%s' of job %s", attid, jobid)	
 	  stream.pipe(zlib.createGzip()).pipe(
 		ctx.caller( call, function (error, response, body){
 			if (!handleError(call,error, response, body,[204], reject)){
@@ -411,6 +444,94 @@ client.downloadLog = function (jobid, stream) {
 	})
 };
 
+/**
+ * Submits and monitor a job execution
+ * @param data the data conatining attachments, parameters
+ * @return the event emitter to attach event callbacks
+ */
+client.execute = function (data){
+	
+	if (typeof data !== 'object') throw new TypeError('Job data is undefined or not an object');
+	if (typeof data.attachments !== 'object') throw new TypeError('Attachment list is undefined or not an object');
+	if (typeof data.attachments.length == 0) throw new TypeError('Attachments list is empty');
+	var jobdef = new Object();
+	jobdef.attachments = data.attachments.map(function(x) {
+	    var att = new Object();
+	    if (typeof x.name !== 'string') throw new Error('Attachment name undefined or not a string')
+	    att.name = x.name;
+	    if (typeof x.stream !== 'object') throw new Error('Attachment stream undefined or not a string')
+	    if (x.length){
+	    	if (typeof x.length !== 'number') throw new Error('Attachment length ia not a number')
+	    	 att.length = x.length;
+	    } 
+	    return att;
+	})
+	if (data.parameters) {
+		if (typeof data.parameters !== 'object') throw new TypeError('Parameter list is not an object');
+		jobdef.parameters=data.parameters
+	}
+	if (data.logstream){
+		if (typeof data.logstream !== 'object') throw new TypeError('Log stream list is not an object');
+	}
+	
+	var observer = client.observer();
+	var jobid;
+	var ctx = this;
+	
+	ctx.createJob(jobdef)	   
+	  .then(function(id) {jobid=id; observer.emit('created',jobid)})
+	  .then(function() {
+		      var first = data.attachments[0]
+			  return data.attachments.slice(1,data.attachments.length).reduce(function(cur,next) {
+				  return cur.then(function(){
+				    return ctx.uploadAttachment(jobid,next.name, next.stream)
+				  })
+		      }, ctx.uploadAttachment(jobid,first.name, first.stream))		      
+	      })		  
+	  .then(function() {return ctx.executeJob(jobid)})
+	  .then(function() {return ctx.waitForCompletion(jobid, data.logstream)})
+	  .then(function() {return ctx.notifyCompletion(jobid,observer)})
+	  .catch(function (error) {observer.emit('error',error)})
+	return observer;	
+};
+
+
+client.submit = function (data){
+	var observer = client.observer();
+	var jobid;
+	var ctx = this;
+	ctx.createJob({attachments : data.attachments})	   
+	  .then(function(id) {jobid=id; observer.emit('created',jobid)})
+	  .then(function() {
+		  var first = data.attachments[0]
+		  return data.attachments.slice(1,data.attachments.length).reduce(function(cur,next) {
+			  return cur.then(function(){
+			    return ctx.uploadAttachment(jobid,next.name, next.stream)
+			  })
+	      }, ctx.uploadAttachment(jobid,first.name, first.stream))		
+	  })		  
+	  .then(function() {return ctx.executeJob(jobid)})
+	  .catch(function (error) {observer.emit('error',error)})
+	return observer;	
+};
+
+client.create = function (data){
+	var observer = client.observer();
+	var jobid;
+	var ctx = this;
+	ctx.createJob({attachments : data.attachments})	   
+	  .then(function(id) {jobid=id; observer.emit('created',jobid)})
+	  .then(function() {
+		  var first = data.attachments[0]
+		  return data.attachments.slice(1,data.attachments.length).reduce(function(cur,next) {
+			  return cur.then(function(){
+			    return ctx.uploadAttachment(jobid,next.name, next.stream)
+			  })
+	      }, ctx.uploadAttachment(jobid,first.name, first.stream))		
+	  })		  
+	  .catch(function (error) {observer.emit('error',error)})
+	return observer;	
+};
 
 module.exports = function (options){
    var c = Object.create(client);
