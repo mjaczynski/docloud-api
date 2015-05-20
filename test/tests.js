@@ -26,6 +26,34 @@ var client = docloud({
 	
 console.log('Using DOcloud URL: ',process.env.URL)
 
+//it ('load tests', function(done){
+//	
+//	this.timeout(3*60 * 1000);
+//	for (var i=0; i < 5; i++) {
+//		client.execute({			
+//			attachments : [
+//		        {name : '.oplproject', 
+//		    	 stream : fs.createReadStream('test/sport-scheduling/.oplproject')},
+//		        {name : 'Sport-scheduling.dat', 
+//			     stream : fs.createReadStream('test/sport-scheduling/Sport-scheduling.dat')},
+//			    {name : 'Sport-scheduling.mod', 
+//				 stream : fs.createReadStream('test/sport-scheduling/Sport-scheduling.mod')},
+//				{name : 'Sport-scheduling.ops', 
+//				 stream : fs.createReadStream('test/sport-scheduling/Sport-scheduling.ops')},
+//		    ]})
+//		   .on('created', function(jobid){console.log(jobid+" created")})
+//		   .on('processed', function(jobid){
+//			   console.log(jobid+" processed");
+//			   client.downloadAttachment(jobid,'solution.json',fs.createWriteStream('test/sport-scheduling/solution.json'))
+//			         .then(function () {return client.downloadLog(jobid,fs.createWriteStream('test/sport-scheduling/solution.log'))})
+//			         .then(function () {done()})  
+//		   })
+//		   .on('interrupted', function(jobid){done("should not be interrupted")})
+//		   .on('failed', function(jobid){done("should not fail")})
+//		   .on('error', function(error){done(error)})
+//   }
+//});
+
 it ('warehouse-location', function(done){
 	
 	this.timeout(3*60 * 1000);	

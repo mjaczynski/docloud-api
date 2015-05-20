@@ -62,7 +62,6 @@ client.listJobs = function () {
 		}
 		ctx.caller( call, function (error, response, body){
 			if (!handleError(call,error, response, body,[200], reject)){
-				 util.log("All jobs deleted")
 				 resolve(body)
 			}			  
 		})
@@ -403,7 +402,6 @@ client.downloadAttachment = function (jobid, attid, stream) {
 			 'accept' : 'application/octet-stream'
 			}
 	}
-	// TODO: handle HTTP error
 	return new Promise( function (resolve, reject){
 		ctx.caller(call).pipe(stream)
 		.on('error', function(){reject(new Error(error))})
@@ -495,7 +493,11 @@ client.execute = function (data){
 	return observer;	
 };
 
-
+/**
+ * Submits but do not monitor the job
+ * @param data the data conatining attachments, parameters
+ * @return the event emitter to attach event callbacks (error and created only)
+ */
 client.submit = function (data){
 	var observer = client.observer();
 	var jobid;
@@ -515,6 +517,11 @@ client.submit = function (data){
 	return observer;	
 };
 
+/**
+ * Creates the job, but do not submit nor monitor it. 
+ * @param data the data conatining attachments, parameters
+ * @return the event emitter to attach event callbacks (error and created only)
+ */
 client.create = function (data){
 	var observer = client.observer();
 	var jobid;
